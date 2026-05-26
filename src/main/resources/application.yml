@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+deepseek:
+  model: deepseek-chat
+  base-url: https://api.deepseek.com/v1
+
+logging:
+  level:
+    com.loan.agent: DEBUG

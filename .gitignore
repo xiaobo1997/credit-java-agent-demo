@@ -1,0 +1,25 @@
+target/
+.idea/
+*.iml
+*.class
+*.jar
+*.log
+.settings/
+.project
+.classpath
+
+# 密钥防护：禁止任何可能含 key 的文件进入仓库
+*.key
+*.pem
+*.p12
+*.pfx
+**/secret*
+**/credential*
+**/api_key*
+.env
+.env.*
+application-local.yml
+application-local.yaml
+application-local.properties
+*-local.yml
+*-local.yaml
