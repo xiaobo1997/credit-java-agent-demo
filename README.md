@@ -114,7 +114,7 @@ Phase 4: Memory ────── @MemoryId，多轮对话上下文记忆
 Phase 5: 评测 ──────── 5 个用例自动化评测，100% 通过
 ```
 
-详细文档见 [GitHub Wiki](https://github.com/xiaobo1997/credit-ai-agent-demo/wiki)
+详细文档见 [GitHub Wiki](https://github.com/xiaobo1997/credit-java-agent-demo/wiki)
 
 ## 设计原则
 
