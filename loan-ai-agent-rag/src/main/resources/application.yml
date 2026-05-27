@@ -1,0 +1,17 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: loan-ai-agent-rag
+
+# DeepSeek 配置（和 chat 模块共用同一套配置）
+deepseek:
+  model: deepseek-chat
+  base-url: https://api.deepseek.com/v1
+
+# RAG 检索配置
+rag:
+  retrieval:
+    top-k: 3           # 每次检索返回的文档片段数
+    min-score: 0.1     # 最低相似度阈值

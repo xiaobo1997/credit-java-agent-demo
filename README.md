@@ -1,8 +1,10 @@
 # Credit AI Agent Demo
 
-基于 **Spring Boot 3 + LangChain4j + DeepSeek** 的信贷审核 AI Agent 学习工程。
+基于 **Spring Boot 3 + LangChain4j + DeepSeek** 的信贷 AI Agent 学习工程。
 
-模拟真实信贷场景——Agent 收到借款申请后，自动调用征信查询工具，综合评估给出审核结论。
+两个子模块：
+- **loan-ai-agent-chat** — 信贷审核 Agent（Agent + Tool Calling + Memory + 评测）
+- **loan-ai-agent-rag** — 贷款知识智能小助手（RAG 检索增强生成）
 
 ## 一句话理解
 
@@ -22,6 +24,7 @@ Agent 就是一个"会思考的微服务"——你用自然语言告诉它做什
 | **Memory** | 对话记忆 | InMemoryChatMemoryStore |
 | **Agent** | 自主决策体 | CreditReviewAgent |
 | **Evaluation** | 评测体系 | AgentEvaluator 5 个用例 |
+| **RAG** | 检索增强生成 | 贷款知识小助手（TF-IDF + LLM） |
 
 ## 技术栈
 
@@ -31,7 +34,8 @@ Agent 就是一个"会思考的微服务"——你用自然语言告诉它做什
 | AI 框架 | LangChain4j 0.36.2 |
 | LLM | DeepSeek（OpenAI 兼容端点） |
 | 记忆 | langchain4j ChatMemory（内存实现） |
-| 构建 | Maven |
+| 检索 | TF-IDF + 余弦相似度（纯 Java） |
+| 构建 | Maven 多模块 |
 
 ## 快速开始
 
@@ -40,68 +44,68 @@ Agent 就是一个"会思考的微服务"——你用自然语言告诉它做什
 - JDK 17+
 - DeepSeek API Key（配置在 `~/tools/moon-bridge/config.yml`）
 
-### 启动
+### 启动 Chat 模块（信贷审核 Agent）
 
 ```bash
 export JAVA_HOME=/path/to/jdk17
 cd loan-ai-agent
-mvn spring-boot:run
+mvn spring-boot:run -pl loan-ai-agent-chat
 ```
 
 应用启动在 `http://localhost:8080`
 
+### 启动 RAG 模块（贷款知识小助手）
+
+```bash
+mvn spring-boot:run -pl loan-ai-agent-rag
+```
+
+应用启动在 `http://localhost:8081`
+
 ### API 测试
 
-**基础对话**
+**基础对话**（Chat 模块）
 ```bash
 curl -X POST http://localhost:8080/api/chat \
   -H "Content-Type: application/json" \
   -d '{"message":"用一句话介绍你自己"}'
 ```
 
-**信贷审核（Agent + Tool Calling）**
+**信贷审核（Agent + Tool Calling）**（Chat 模块）
 ```bash
 curl -X POST http://localhost:8080/api/agent/review \
   -H "Content-Type: application/json" \
   -d '{"name":"张三","idCard":"320102199001011234","amount":"50000","purpose":"购车"}'
 ```
 
-**多轮对话（带记忆）**
+**知识问答（RAG）**（RAG 模块）
 ```bash
-# 第 1 轮：提交申请（记录返回的 memoryId）
-curl -X POST http://localhost:8080/api/agent/review \
+curl -X POST http://localhost:8081/api/rag/ask \
   -H "Content-Type: application/json" \
-  -d '{"name":"李四","idCard":"320102199001011239","amount":"80000","purpose":"装修"}'
-
-# 第 2 轮：追问（使用同一个 memoryId）
-curl -X POST http://localhost:8080/api/agent/review \
-  -H "Content-Type: application/json" \
-  -d '{"memoryId":"<上轮返回的memoryId>","question":"那他的征信分数是多少？"}'
-```
-
-**运行评测**
-```bash
-curl http://localhost:8080/api/agent/evaluate
+  -d '{"question":"等额本息和等额本金有什么区别？"}'
 ```
 
 ## 项目结构
 
 ```
-src/main/java/com/loan/agent/
-├── LoanAiAgentApplication.java    # 启动类
-├── config/
-│   └── DeepSeekConfig.java        # DeepSeek 配置 + Bean 注册
-├── agent/
-│   └── CreditReviewAgent.java     # @AiService 审核 Agent 接口
-├── tool/
-│   └── CreditCheckTool.java       # @Tool 征信查询（Mock）
-├── controller/
-│   ├── ChatController.java        # /api/chat 基础对话
-│   ├── AgentController.java       # /api/agent/review 信贷审核
-│   └── EvaluateController.java    # /api/agent/evaluate 评测
-└── evaluate/
-    ├── TestCase.java              # 评测用例模型
-    └── AgentEvaluator.java        # 评测执行引擎
+loan-ai-agent/
+├── pom.xml                                  # 父 POM（版本管理）
+├── loan-ai-agent-chat/                      # Chat 模块（信贷 Agent）
+│   └── src/main/java/com/loan/agent/
+│       ├── config/DeepSeekConfig.java
+│       ├── agent/CreditReviewAgent.java
+│       ├── tool/CreditCheckTool.java
+│       ├── controller/{Chat,Agent,Evaluate}Controller.java
+│       └── evaluate/{TestCase,AgentEvaluator}.java
+├── loan-ai-agent-rag/                       # RAG 模块（知识小助手）
+│   └── src/main/java/com/loan/agent/rag/
+│       ├── config/RagConfiguration.java
+│       ├── knowledge/{KnowledgeBase,KnowledgeInitializer}.java
+│       ├── retrieval/DocumentRetriever.java   # TF-IDF 检索器
+│       ├── pipeline/{RagPipeline,QueryParser}.java
+│       ├── controller/RagController.java
+│       └── model/{KnowledgeDocument,RagRequest,RagResponse}.java
+└── docs/                                    # 学习文档
 ```
 
 ## 学习路径
@@ -112,6 +116,7 @@ Phase 2: 基础对话 ──── POST /api/chat，验证 LLM 连接
 Phase 3: Agent ──────── @Tool + @AiService，LLM 自主调工具
 Phase 4: Memory ────── @MemoryId，多轮对话上下文记忆
 Phase 5: 评测 ──────── 5 个用例自动化评测，100% 通过
+Phase 6: RAG ───────── 检索增强生成，知识问答小助手
 ```
 
 详细文档见 [GitHub Wiki](https://github.com/xiaobo1997/credit-java-agent-demo/wiki)
@@ -120,9 +125,9 @@ Phase 5: 评测 ──────── 5 个用例自动化评测，100% 通�
 
 - **从简**：每个 Phase 只加必要代码，不搞抽象
 - **可验证**：每个 Phase 都有明确的验证步骤
-- **渐进式**：5 个 Phase 从小到大，概念层层递进
+- **渐进式**：6 个 Phase 从小到大，概念层层递进
 - **安全**：API Key 读仓库外配置，.gitignore 防护，零泄露
 
 ---
 
-*最后更新：2026-05-27*
+*最后更新：2026-05-28*
